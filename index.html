@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Honzišťovo Cvičeníčko</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #030508;
+  --c1: #00f5ff;
+  --c2: #ff006e;
+  --c3: #7b2fff;
+  --c4: #ffbe0b;
+  --glass: rgba(255,255,255,0.06);
+  --border: rgba(0,245,255,0.15);
+  --text: #e8f4f8;
+  --muted: rgba(232,244,248,0.4);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: none;
+}
+#cursor {
+  position:fixed;width:12px;height:12px;background:var(--c1);border-radius:50%;
+  pointer-events:none;z-index:9999;transform:translate(-50%,-50%);
+  transition:width 0.2s,height 0.2s,background 0.2s;mix-blend-mode:screen;
+}
+#cursor-trail {
+  position:fixed;width:36px;height:36px;border:1px solid rgba(0,245,255,0.4);border-radius:50%;
+  pointer-events:none;z-index:9998;transform:translate(-50%,-50%);
+  transition:left 0.12s ease,top 0.12s ease;
+}
+#bgCanvas { position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none; }
+
+/* GYM PICTOGRAM BG */
+#gymBg { position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden; }
+.gym-icon {
+  position:absolute;opacity:0.045;color:var(--c1);
+  filter:drop-shadow(0 0 5px currentColor);
+  animation:gymFloat var(--dur,13s) ease-in-out infinite;
+  animation-delay:var(--del,0s);
+}
+@keyframes gymFloat {
+  0%,100%{transform:translateY(0) rotate(var(--rot,0deg));}
+  50%{transform:translateY(-16px) rotate(calc(var(--rot,0deg) + 4deg));}
+}
+
+body::before {
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:2;opacity:0.4;
+}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:1;filter:blur(80px);opacity:0.1;animation:orbFloat 9s ease-in-out infinite;}
+.orb1{width:400px;height:400px;background:var(--c3);top:-100px;right:-100px;}
+.orb2{width:300px;height:300px;background:var(--c2);bottom:50px;left:-100px;animation-delay:-4s;}
+.orb3{width:200px;height:200px;background:var(--c1);top:40%;left:45%;animation-delay:-7s;}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,25px) scale(1.08)}}
+.wrapper{position:relative;z-index:3;max-width:900px;margin:0 auto;padding:0 20px 100px;}
+
+/* HEADER */
+header{padding:40px 0 20px;text-align:center;position:relative;}
+.header-eyebrow{font-family:'Orbitron',sans-serif;font-size:0.6rem;letter-spacing:5px;color:var(--c1);text-transform:uppercase;margin-bottom:10px;opacity:0;animation:fadeUp 0.6s 0.1s forwards;}
+header h1{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(1.2rem,4.5vw,2.5rem);
+  font-weight:900;letter-spacing:1px;line-height:1.1;
+  background:linear-gradient(135deg,var(--c1) 0%,var(--c3) 50%,var(--c2) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  opacity:0;animation:fadeUp 0.7s 0.2s forwards;position:relative;
+}
+header h1::after{
+  content:'Honzišťovo Cvičeníčko';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--c1),var(--c3),var(--c2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:blur(16px);opacity:0.35;z-index:-1;
+}
+.header-sub{font-size:0.72rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:7px;opacity:0;animation:fadeUp 0.7s 0.35s forwards;}
+
+/* DAY SELECTOR */
+.day-selector{display:flex;gap:12px;margin:26px 0 22px;opacity:0;animation:fadeUp 0.7s 0.45s forwards;}
+.day-btn{
+  flex:1;padding:13px 8px;background:var(--glass);border:1px solid var(--border);border-radius:12px;
+  cursor:pointer;text-align:center;backdrop-filter:blur(10px);
+  transition:all 0.3s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden;
+}
+.day-btn::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--c1),var(--c3));transform:scaleX(0);transition:transform 0.3s;}
+.day-btn.active{background:rgba(0,245,255,0.08);border-color:var(--c1);box-shadow:0 0 30px rgba(0,245,255,0.15),inset 0 0 30px rgba(0,245,255,0.04);}
+.day-btn.active::after{transform:scaleX(1);}
+.day-btn:hover:not(.active){border-color:rgba(0,245,255,0.3);transform:translateY(-2px);}
+.day-btn-num{font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;color:var(--c1);}
+.day-btn-name{font-size:0.58rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
+.day-btn-ring{width:30px;height:30px;margin:5px auto 0;}
+.mini-ring-bg{fill:none;stroke:rgba(255,255,255,0.08);stroke-width:3;}
+.mini-ring-prog{fill:none;stroke-width:3;stroke-linecap:round;stroke-dasharray:88;stroke-dashoffset:88;transition:stroke-dashoffset 0.8s ease;stroke:var(--c1);}
+
+/* DAY PANELS */
+.day-panel{display:none;opacity:0;transform:translateY(20px);}
+.day-panel.active{display:block;animation:panelIn 0.45s forwards;}
+@keyframes panelIn{to{opacity:1;transform:translateY(0)}}
+.day-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.day-tag{font-family:'Orbitron',sans-serif;font-size:0.53rem;letter-spacing:4px;color:var(--c2);text-transform:uppercase;margin-bottom:4px;}
+.day-title{font-family:'Orbitron',sans-serif;font-size:1.45rem;font-weight:700;background:linear-gradient(135deg,#fff 0%,var(--c1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.day-desc-box{background:rgba(255,0,110,0.05);border:1px solid rgba(255,0,110,0.18);border-radius:10px;padding:10px 14px;font-size:0.74rem;color:var(--muted);line-height:1.6;margin-bottom:18px;position:relative;overflow:hidden;}
+.day-desc-box::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--c2),var(--c3));}
+.complete-all-btn{font-family:'Orbitron',sans-serif;font-size:0.56rem;letter-spacing:2px;padding:9px 17px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.05);color:var(--c1);border-radius:8px;cursor:pointer;transition:all 0.25s;text-transform:uppercase;}
+.complete-all-btn:hover{background:rgba(0,245,255,0.12);border-color:var(--c1);box-shadow:0 0 20px rgba(0,245,255,0.2);transform:translateY(-2px);}
+
+/* EXERCISE CARDS */
+.exercise-list{display:flex;flex-direction:column;gap:9px;margin-bottom:26px;}
+.ex-card{
+  background:var(--glass);border:1px solid rgba(255,255,255,0.07);border-radius:14px;
+  overflow:hidden;cursor:pointer;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+  position:relative;backdrop-filter:blur(8px);
+}
+.ex-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,245,255,0.04),transparent);opacity:0;transition:opacity 0.3s;}
+.ex-card:hover{transform:translateX(6px);border-color:rgba(0,245,255,0.25);}
+.ex-card:hover::before{opacity:1;}
+.ex-card.done{background:rgba(0,200,100,0.06);border-color:rgba(0,200,100,0.25);}
+.ex-card.done::before{background:linear-gradient(135deg,rgba(0,200,100,0.06),transparent);opacity:1;}
+.ex-inner{display:flex;align-items:center;padding:14px 16px;gap:13px;}
+.ex-check{
+  width:30px;height:30px;border-radius:8px;border:2px solid rgba(255,255,255,0.13);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all 0.3s cubic-bezier(0.4,0,0.2,1);background:rgba(255,255,255,0.03);
+}
+.ex-card.done .ex-check{background:linear-gradient(135deg,#00c864,#00f5a0);border-color:transparent;box-shadow:0 0 18px rgba(0,200,100,0.4);animation:checkPop 0.4s cubic-bezier(0.4,0,0.2,1);}
+@keyframes checkPop{0%{transform:scale(0.8)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.check-icon{opacity:0;transition:opacity 0.2s 0.1s;}
+.ex-card.done .check-icon{opacity:1;}
+.ex-picto{width:36px;height:36px;flex-shrink:0;opacity:0.2;transition:opacity 0.3s;display:flex;align-items:center;justify-content:center;}
+.ex-picto svg{width:100%;height:100%;color:var(--c1);}
+.ex-card:hover .ex-picto{opacity:0.4;}
+.ex-card.done .ex-picto{opacity:0.55;}
+.ex-info{flex:1;min-width:0;}
+.ex-name{font-size:0.88rem;font-weight:600;color:var(--text);line-height:1.3;transition:color 0.3s;}
+.ex-card.done .ex-name{color:rgba(0,200,100,0.7);text-decoration:line-through;text-decoration-color:rgba(0,200,100,0.4);}
+.ex-meta{font-size:0.67rem;color:var(--muted);margin-top:3px;}
+.ex-card.done .ex-meta{color:rgba(0,200,100,0.4);}
+.ex-badge{font-family:'Orbitron',sans-serif;font-size:0.56rem;font-weight:700;padding:5px 10px;border-radius:20px;background:rgba(123,47,255,0.15);border:1px solid rgba(123,47,255,0.3);color:var(--c3);white-space:nowrap;flex-shrink:0;transition:all 0.3s;letter-spacing:1px;}
+.ex-card.done .ex-badge{background:rgba(0,200,100,0.1);border-color:rgba(0,200,100,0.3);color:#00c864;}
+.ripple{position:absolute;border-radius:50%;background:rgba(0,245,255,0.13);transform:scale(0);animation:rippleAnim 0.6s linear;pointer-events:none;}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+
+/* COMPLETION BANNER */
+.day-complete-banner{display:none;text-align:center;padding:26px 20px;margin-bottom:16px;position:relative;overflow:hidden;border-radius:16px;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.2);}
+.day-complete-banner.show{display:block;animation:bannerIn 0.55s cubic-bezier(0.4,0,0.2,1);}
+@keyframes bannerIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.banner-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.banner-particle{position:absolute;width:4px;height:4px;border-radius:50%;animation:particleFly 1.5s ease-out forwards;}
+@keyframes particleFly{0%{transform:translateY(100%) scale(1);opacity:1}100%{transform:translateY(-200px) scale(0);opacity:0}}
+.banner-emoji{font-size:2.6rem;display:block;margin-bottom:6px;animation:emojiSpin 0.6s ease;}
+@keyframes emojiSpin{from{transform:rotate(-20deg) scale(0)}to{transform:rotate(0deg) scale(1)}}
+.banner-title{font-family:'Orbitron',sans-serif;font-size:1.25rem;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,var(--c1),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.banner-sub{font-size:0.74rem;color:var(--muted);margin-top:5px;}
+
+/* STATS + RING */
+.bottom-stats{margin-top:30px;opacity:0;animation:fadeUp 0.7s 0.55s forwards;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:22px;}
+.stat-card{background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:17px;text-align:center;position:relative;overflow:hidden;backdrop-filter:blur(10px);transition:transform 0.3s,border-color 0.3s;}
+.stat-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 50% 50%,rgba(0,245,255,0.05),transparent 60%);opacity:0;transition:opacity 0.3s;}
+.stat-card:hover::before{opacity:1;}.stat-card:hover{transform:translateY(-4px);border-color:rgba(0,245,255,0.4);}
+.stat-num{font-family:'Orbitron',sans-serif;font-size:1.65rem;font-weight:700;color:var(--c1);line-height:1;}
+.stat-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-top:5px;}
+.ring-container{display:flex;justify-content:center;margin:0 0 28px;}
+.ring-wrap{position:relative;width:155px;height:155px;}
+.ring-svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:rgba(255,255,255,0.05);stroke-width:8;}
+.ring-progress{fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:440;stroke-dashoffset:440;transition:stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1);stroke:url(#ringGrad);filter:drop-shadow(0 0 8px var(--c1));}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-pct{font-family:'Orbitron',sans-serif;font-size:1.95rem;font-weight:900;background:linear-gradient(135deg,var(--c1),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.ring-label{font-size:0.57rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+
+/* TIPS */
+.tips-section{margin-top:8px;}
+.tips-header{font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:4px;color:var(--c2);text-transform:uppercase;margin-bottom:13px;display:flex;align-items:center;gap:10px;}
+.tips-header::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,0,110,0.3),transparent);}
+.tip-accordion{background:var(--glass);border:1px solid rgba(255,0,110,0.15);border-radius:11px;margin-bottom:8px;overflow:hidden;transition:border-color 0.3s;}
+.tip-accordion:hover{border-color:rgba(255,0,110,0.35);}
+.tip-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 15px;cursor:pointer;user-select:none;}
+.tip-name{font-size:0.82rem;font-weight:600;color:var(--text);}
+.tip-arrow{color:var(--c2);font-size:1rem;transition:transform 0.3s;flex-shrink:0;}
+.tip-accordion.open .tip-arrow{transform:rotate(180deg);}
+.tip-body{max-height:0;overflow:hidden;transition:max-height 0.4s ease,padding 0.3s;font-size:0.75rem;color:var(--muted);line-height:1.65;}
+.tip-accordion.open .tip-body{max-height:300px;padding:0 15px 13px;}
+
+.active-line{height:1px;background:linear-gradient(90deg,transparent,var(--c1),transparent);margin-bottom:22px;opacity:0.4;animation:scanline 3s ease infinite;}
+@keyframes scanline{0%,100%{opacity:0.25}50%{opacity:0.6}}
+.bottom-bar{margin-top:36px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.reset-btn{font-family:'Orbitron',sans-serif;font-size:0.57rem;letter-spacing:2px;padding:10px 20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);color:var(--muted);border-radius:8px;cursor:pointer;text-transform:uppercase;transition:all 0.3s;}
+.reset-btn:hover{border-color:var(--c2);color:var(--c2);box-shadow:0 0 20px rgba(255,0,110,0.2);}
+.week-label{font-size:0.67rem;color:var(--muted);letter-spacing:1px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,245,255,0.3);border-radius:2px}
+@media(max-width:480px){.day-btn-name{display:none}.stat-num{font-size:1.3rem}}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+
+<!-- SVG GYM PICTOGRAM BACKGROUND -->
+<div id="gymBg">
+  <!-- DUMBBELL big -->
+  <svg class="gym-icon" style="left:3%;top:6%;width:100px;--dur:14s;--del:0s;--rot:-18deg" viewBox="0 0 80 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <rect x="2" y="10" width="8" height="10" rx="2"/><rect x="12" y="7" width="5" height="16" rx="1.5"/>
+    <line x1="17" y1="14.5" x2="63" y2="14.5"/>
+    <rect x="63" y="7" width="5" height="16" rx="1.5"/><rect x="70" y="10" width="8" height="10" rx="2"/>
+  </svg>
+  <!-- BARBELL -->
+  <svg class="gym-icon" style="right:2%;top:12%;width:130px;--dur:11s;--del:-3s;--rot:8deg" viewBox="0 0 120 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <rect x="1" y="5" width="6" height="10" rx="1.5"/><rect x="8" y="3" width="4" height="14" rx="1"/>
+    <line x1="12" y1="10" x2="108" y2="10"/>
+    <rect x="108" y="3" width="4" height="14" rx="1"/><rect x="113" y="5" width="6" height="10" rx="1.5"/>
+  </svg>
+  <!-- SQUAT FIGURE -->
+  <svg class="gym-icon" style="left:14%;top:32%;width:72px;--dur:16s;--del:-6s;--rot:4deg" viewBox="0 0 60 80" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="30" cy="8" r="6"/><line x1="30" y1="14" x2="30" y2="38"/><line x1="10" y1="24" x2="50" y2="24"/>
+    <line x1="30" y1="38" x2="15" y2="58"/><line x1="30" y1="38" x2="45" y2="58"/>
+    <line x1="15" y1="58" x2="10" y2="75"/><line x1="45" y1="58" x2="50" y2="75"/>
+  </svg>
+  <!-- CURL FIGURE -->
+  <svg class="gym-icon" style="right:10%;top:38%;width:66px;--dur:13s;--del:-2s;--rot:-7deg" viewBox="0 0 60 90" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="30" cy="8" r="6"/><line x1="30" y1="14" x2="30" y2="45"/>
+    <line x1="30" y1="28" x2="10" y2="20"/><line x1="10" y1="20" x2="5" y2="32"/>
+    <rect x="1" y="28" width="6" height="8" rx="1.5"/>
+    <line x1="30" y1="28" x2="48" y2="42"/>
+    <line x1="30" y1="45" x2="18" y2="72"/><line x1="30" y1="45" x2="42" y2="72"/>
+    <line x1="18" y1="72" x2="14" y2="88"/><line x1="42" y1="72" x2="46" y2="88"/>
+  </svg>
+  <!-- BENCH PRESS -->
+  <svg class="gym-icon" style="left:55%;top:62%;width:110px;--dur:18s;--del:-9s;--rot:3deg" viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="10" y="30" width="80" height="8" rx="3"/>
+    <line x1="20" y1="38" x2="20" y2="52"/><line x1="80" y1="38" x2="80" y2="52"/>
+    <circle cx="50" cy="22" r="6"/><line x1="50" y1="28" x2="50" y2="38"/>
+    <line x1="28" y1="20" x2="72" y2="20"/>
+    <line x1="28" y1="14" x2="72" y2="14" stroke-width="2.5"/>
+    <rect x="20" y="10" width="5" height="10" rx="1.5"/><rect x="2" y="11" width="5" height="8" rx="1"/>
+    <rect x="75" y="10" width="5" height="10" rx="1.5"/><rect x="93" y="11" width="5" height="8" rx="1"/>
+  </svg>
+  <!-- KETTLEBELL -->
+  <svg class="gym-icon" style="left:2%;top:68%;width:58px;--dur:15s;--del:-5s;--rot:-14deg" viewBox="0 0 50 60" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+    <path d="M15 22 Q8 8 25 5 Q42 8 35 22"/>
+    <ellipse cx="25" cy="38" rx="18" ry="16"/>
+    <line x1="17" y1="22" x2="17" y2="27"/><line x1="33" y1="22" x2="33" y2="27"/>
+  </svg>
+  <!-- CABLE PULLDOWN FIGURE -->
+  <svg class="gym-icon" style="right:4%;top:65%;width:66px;--dur:12s;--del:-7s;--rot:11deg" viewBox="0 0 60 90" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="30" cy="12" r="6"/><line x1="30" y1="18" x2="30" y2="48"/>
+    <line x1="10" y1="30" x2="50" y2="30"/>
+    <line x1="10" y1="30" x2="5" y2="16"/><line x1="50" y1="30" x2="55" y2="16"/>
+    <line x1="0" y1="10" x2="60" y2="10" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <line x1="30" y1="10" x2="30" y2="16"/>
+    <line x1="30" y1="48" x2="18" y2="76"/><line x1="30" y1="48" x2="42" y2="76"/>
+  </svg>
+  <!-- WEIGHT PLATE -->
+  <svg class="gym-icon" style="left:40%;top:10%;width:58px;--dur:20s;--del:-10s;--rot:0deg" viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="30" cy="30" r="26"/><circle cx="30" cy="30" r="18"/><circle cx="30" cy="30" r="5"/>
+  </svg>
+  <!-- DUMBBELL small -->
+  <svg class="gym-icon" style="left:76%;top:22%;width:65px;--dur:10s;--del:-1s;--rot:28deg" viewBox="0 0 80 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <rect x="2" y="10" width="8" height="10" rx="2"/><rect x="12" y="7" width="5" height="16" rx="1.5"/>
+    <line x1="17" y1="14.5" x2="63" y2="14.5"/>
+    <rect x="63" y="7" width="5" height="16" rx="1.5"/><rect x="70" y="10" width="8" height="10" rx="2"/>
+  </svg>
+  <!-- LEGPRESS -->
+  <svg class="gym-icon" style="left:28%;top:78%;width:85px;--dur:17s;--del:-4s;--rot:-5deg" viewBox="0 0 80 70" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="32" width="30" height="10" rx="3"/>
+    <line x1="5" y1="42" x2="5" y2="60"/><line x1="35" y1="42" x2="35" y2="60"/>
+    <circle cx="18" cy="18" r="6"/><line x1="18" y1="24" x2="18" y2="38"/>
+    <line x1="10" y1="30" x2="26" y2="30"/>
+    <line x1="18" y1="38" x2="48" y2="26"/><line x1="18" y1="38" x2="52" y2="32"/>
+    <rect x="52" y="20" width="8" height="20" rx="2"/>
+    <line x1="60" y1="22" x2="75" y2="22"/><line x1="60" y1="38" x2="75" y2="38"/>
+  </svg>
+  <!-- SHOULDER PRESS FIGURE -->
+  <svg class="gym-icon" style="left:68%;top:44%;width:65px;--dur:14s;--del:-8s;--rot:-3deg" viewBox="0 0 60 80" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="30" cy="8" r="6"/><line x1="30" y1="14" x2="30" y2="44"/>
+    <line x1="8" y1="20" x2="52" y2="20"/>
+    <line x1="8" y1="20" x2="4" y2="10"/><rect x="0" y="6" width="7" height="8" rx="1.5"/>
+    <line x1="52" y1="20" x2="56" y2="10"/><rect x="53" y="6" width="7" height="8" rx="1.5"/>
+    <line x1="30" y1="44" x2="18" y2="68"/><line x1="30" y1="44" x2="42" y2="68"/>
+  </svg>
+</div>
+
+<canvas id="bgCanvas"></canvas>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5ff"/><stop offset="100%" stop-color="#7b2fff"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="wrapper">
+  <header>
+    <div class="header-eyebrow">● SYSTEM ACTIVE · 3 DNY V TÝDNU</div>
+    <h1>Honzišťovo Cvičeníčko</h1>
+    <div class="header-sub">Training Protocol · 60 min · Horní část + Prsa</div>
+  </header>
+
+  <!-- DAY SELECTOR -->
+  <div class="day-selector">
+    <div class="day-btn active" onclick="switchDay(0)" id="daybtn0">
+      <div class="day-btn-num">01</div><div class="day-btn-name">Nohy + Ramena</div>
+      <svg class="day-btn-ring" viewBox="0 0 36 36"><circle class="mini-ring-bg" cx="18" cy="18" r="14"/><circle class="mini-ring-prog" id="miniRing0" cx="18" cy="18" r="14" transform="rotate(-90 18 18)"/></svg>
+    </div>
+    <div class="day-btn" onclick="switchDay(1)" id="daybtn1">
+      <div class="day-btn-num">02</div><div class="day-btn-name">Záda + Triceps</div>
+      <svg class="day-btn-ring" viewBox="0 0 36 36"><circle class="mini-ring-bg" cx="18" cy="18" r="14"/><circle class="mini-ring-prog" id="miniRing1" cx="18" cy="18" r="14" transform="rotate(-90 18 18)"/></svg>
+    </div>
+    <div class="day-btn" onclick="switchDay(2)" id="daybtn2">
+      <div class="day-btn-num">03</div><div class="day-btn-name">Prsa + Biceps</div>
+      <svg class="day-btn-ring" viewBox="0 0 36 36"><circle class="mini-ring-bg" cx="18" cy="18" r="14"/><circle class="mini-ring-prog" id="miniRing2" cx="18" cy="18" r="14" transform="rotate(-90 18 18)"/></svg>
+    </div>
+  </div>
+
+  <!-- DAY 1 -->
+  <div class="day-panel active" id="panel0">
+    <div class="day-complete-banner" id="banner0"><div class="banner-particles" id="bp0"></div><span class="banner-emoji">🔥</span><div class="banner-title">DEN 1 SPLNĚN</div><div class="banner-sub">Nohy a ramena — výjimečný výkon!</div></div>
+    <div class="day-head">
+      <div><div class="day-tag">// DEN 01</div><div class="day-title">NOHY + RAMENA</div></div>
+      <button class="complete-all-btn" onclick="completeAll(0)">✓ Vše Hotovo</button>
+    </div>
+    <div class="day-desc-box">Zaměření na stabilitu a sílu dolních končetin bez přetěžování zad. Pauzy 60–90 sekund.</div>
+    <div class="exercise-list" id="exList0">
+      <div class="ex-card" onclick="toggleEx(this,0,0)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 60 80" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="30" cy="8" r="6"/><line x1="30" y1="14" x2="30" y2="42"/><line x1="10" y1="26" x2="50" y2="26"/><line x1="30" y1="42" x2="14" y2="62"/><line x1="30" y1="42" x2="46" y2="62"/><line x1="14" y1="62" x2="10" y2="78"/><line x1="46" y1="62" x2="50" y2="78"/></svg></div><div class="ex-info"><div class="ex-name">Dřepy s činkou / pohárový dřep</div><div class="ex-meta">Záda rovná · Kolena nad prsty</div></div><div class="ex-badge">4×8–10</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,0,1)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 80 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="5" y="18" width="70" height="14" rx="3"/><line x1="20" y1="18" x2="20" y2="10"/><line x1="60" y1="18" x2="60" y2="10"/><rect x="14" y="5" width="12" height="5" rx="2"/><rect x="54" y="5" width="12" height="5" rx="2"/><line x1="40" y1="32" x2="40" y2="46"/></svg></div><div class="ex-info"><div class="ex-name">Zakopávání na stroji (vsedě/vleže)</div><div class="ex-meta">Plný rozsah · Pomalá excentrika</div></div><div class="ex-badge">3×12–15</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,0,2)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 60 75" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="30" cy="8" r="6"/><line x1="30" y1="14" x2="30" y2="44"/><line x1="8" y1="20" x2="52" y2="20"/><line x1="8" y1="20" x2="4" y2="10"/><rect x="0" y="6" width="7" height="8" rx="1.5"/><line x1="52" y1="20" x2="56" y2="10"/><rect x="53" y="6" width="7" height="8" rx="1.5"/><line x1="30" y1="44" x2="18" y2="68"/><line x1="30" y1="44" x2="42" y2="68"/></svg></div><div class="ex-info"><div class="ex-name">Tlaky na ramena s jednoručkami</div><div class="ex-meta">Vsedě nebo ve stoji · Lopatky dolů</div></div><div class="ex-badge">3×10</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,0,3)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 70 60" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="35" cy="10" r="6"/><line x1="35" y1="16" x2="35" y2="38"/><line x1="10" y1="26" x2="60" y2="26"/><line x1="10" y1="26" x2="4" y2="20"/><rect x="0" y="16" width="7" height="8" rx="1.5"/><line x1="60" y1="26" x2="66" y2="20"/><rect x="63" y="16" width="7" height="8" rx="1.5"/><line x1="35" y1="38" x2="22" y2="56"/><line x1="35" y1="38" x2="48" y2="56"/></svg></div><div class="ex-info"><div class="ex-name">Upažování s jednoručkami ve stoji</div><div class="ex-meta">Lokte pokrčené · Kontrolovaný pohyb</div></div><div class="ex-badge">3×12–15</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,0,4)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 80 60" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="28" width="70" height="8" rx="3"/><line x1="15" y1="36" x2="15" y2="52"/><line x1="65" y1="36" x2="65" y2="52"/><circle cx="40" cy="16" r="6"/><line x1="40" y1="22" x2="40" y2="30"/><line x1="24" y1="18" x2="56" y2="18"/></svg></div><div class="ex-info"><div class="ex-name">Legpress</div><div class="ex-meta">Nohy výše na plošině</div></div><div class="ex-badge">3×12</div></div></div>
+    </div>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="day-panel" id="panel1">
+    <div class="day-complete-banner" id="banner1"><div class="banner-particles" id="bp1"></div><span class="banner-emoji">💪</span><div class="banner-title">DEN 2 SPLNĚN</div><div class="banner-sub">Záda a triceps — skvělý postoj!</div></div>
+    <div class="day-head">
+      <div><div class="day-tag">// DEN 02</div><div class="day-title">ZÁDA + TRICEPS</div></div>
+      <button class="complete-all-btn" onclick="completeAll(1)">✓ Vše Hotovo</button>
+    </div>
+    <div class="day-desc-box">Silná záda jsou klíčem k tomu, aby prsa nepůsobila povisle — rovnají postoj.</div>
+    <div class="exercise-list" id="exList1">
+      <div class="ex-card" onclick="toggleEx(this,1,0)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 60 90" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="30" cy="12" r="6"/><line x1="30" y1="18" x2="30" y2="48"/><line x1="10" y1="30" x2="50" y2="30"/><line x1="10" y1="30" x2="5" y2="16"/><line x1="50" y1="30" x2="55" y2="16"/><line x1="0" y1="10" x2="60" y2="10" stroke-dasharray="4 3" stroke-width="1.5"/><line x1="30" y1="48" x2="18" y2="76"/><line x1="30" y1="48" x2="42" y2="76"/></svg></div><div class="ex-info"><div class="ex-name">Stahování horní kladky k hrudníku</div><div class="ex-meta">Široký úchop · Lopatky dolů</div></div><div class="ex-badge">4×8–10</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,1,1)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 80 60" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="12" r="6"/><line x1="20" y1="18" x2="20" y2="38"/><line x1="8" y1="26" x2="32" y2="26"/><line x1="20" y1="38" x2="12" y2="56"/><line x1="20" y1="38" x2="28" y2="56"/><rect x="5" y="22" width="50" height="6" rx="2"/><line x1="55" y1="25" x2="78" y2="25" stroke-dasharray="4 3"/></svg></div><div class="ex-info"><div class="ex-name">Přítahy spodní kladky k pasu</div><div class="ex-meta">Vsedě · Hruď vypnutá</div></div><div class="ex-badge">3×10–12</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,1,2)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 50 80" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="25" cy="10" r="6"/><line x1="25" y1="16" x2="25" y2="40"/><line x1="12" y1="24" x2="38" y2="24"/><line x1="12" y1="24" x2="8" y2="40"/><line x1="8" y1="40" x2="8" y2="56"/><rect x="4" y="53" width="8" height="6" rx="1.5"/><line x1="25" y1="40" x2="14" y2="66"/><line x1="25" y1="40" x2="36" y2="66"/></svg></div><div class="ex-info"><div class="ex-name">Tricepsové stlačování kladky</div><div class="ex-meta">Rovný adaptér nebo lano</div></div><div class="ex-badge">3×12</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,1,3)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 80 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="28" width="50" height="8" rx="3"/><circle cx="25" cy="14" r="5"/><line x1="25" y1="19" x2="25" y2="28"/><line x1="14" y1="22" x2="36" y2="22"/><line x1="36" y1="22" x2="45" y2="14"/><line x1="45" y1="14" x2="45" y2="22"/><rect x="42" y="8" width="6" height="8" rx="1.5"/></svg></div><div class="ex-info"><div class="ex-name">Francouzský tlak s EZ činkou</div><div class="ex-meta">Vleže · Lokte fixované</div></div><div class="ex-badge">3×10</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,1,4)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 70 60" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="35" cy="10" r="6"/><line x1="35" y1="16" x2="35" y2="36"/><line x1="18" y1="26" x2="52" y2="26"/><line x1="35" y1="36" x2="22" y2="54"/><line x1="35" y1="36" x2="48" y2="54"/><rect x="4" y="34" width="60" height="6" rx="2"/></svg></div><div class="ex-info"><div class="ex-name">Hyperextenze (vzpřimovače trupu)</div><div class="ex-meta">Pomalý pohyb · Bez přetahování</div></div><div class="ex-badge">3×15</div></div></div>
+    </div>
+  </div>
+
+  <!-- DAY 3 -->
+  <div class="day-panel" id="panel2">
+    <div class="day-complete-banner" id="banner2"><div class="banner-particles" id="bp2"></div><span class="banner-emoji">🏆</span><div class="banner-title">TÝDEN SPLNĚN</div><div class="banner-sub">Všechny 3 dny — jsi neporazitelná!</div></div>
+    <div class="day-head">
+      <div><div class="day-tag">// DEN 03</div><div class="day-title">PRSA + BICEPS</div></div>
+      <button class="complete-all-btn" onclick="completeAll(2)">✓ Vše Hotovo</button>
+    </div>
+    <div class="day-desc-box">Klíčový den pro nápravu povislých prsou — priorita je horní část. Aplikuj strategii při každém tréninku.</div>
+    <div class="exercise-list" id="exList2">
+      <div class="ex-card" onclick="toggleEx(this,2,0)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 100 55" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="28" width="80" height="8" rx="3"/><line x1="20" y1="36" x2="20" y2="50"/><line x1="80" y1="36" x2="80" y2="50"/><circle cx="50" cy="18" r="6"/><line x1="50" y1="24" x2="50" y2="28"/><line x1="28" y1="16" x2="72" y2="16"/><line x1="28" y1="10" x2="72" y2="10" stroke-width="2.5"/><rect x="20" y="7" width="5" height="8" rx="1.5"/><rect x="75" y="7" width="5" height="8" rx="1.5"/><rect x="4" y="8" width="5" height="6" rx="1"/><rect x="91" y="8" width="5" height="6" rx="1"/></svg></div><div class="ex-info"><div class="ex-name">Tlaky na šikmé lavici (30–45°)</div><div class="ex-meta">Hlavou nahoru · Klíč k "zvednití" hrudníku</div></div><div class="ex-badge">4×8–10</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,2,1)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 80 50" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="28" width="60" height="8" rx="3"/><line x1="18" y1="36" x2="18" y2="48"/><line x1="62" y1="36" x2="62" y2="48"/><circle cx="40" cy="18" r="6"/><line x1="40" y1="24" x2="40" y2="28"/><line x1="18" y1="20" x2="62" y2="20"/><rect x="10" y="16" width="6" height="8" rx="1.5"/><rect x="64" y="16" width="6" height="8" rx="1.5"/></svg></div><div class="ex-info"><div class="ex-name">Tlaky s jednoručkami na rovné lavici</div><div class="ex-meta">Větší rozsah pohybu než s velkou činkou</div></div><div class="ex-badge">3×10–12</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,2,2)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 55 80" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="28" cy="9" r="6"/><line x1="28" y1="15" x2="28" y2="38"/><line x1="14" y1="24" x2="42" y2="24"/><line x1="14" y1="24" x2="8" y2="42"/><line x1="8" y1="42" x2="18" y2="52"/><rect x="4" y="38" width="7" height="8" rx="1.5"/><line x1="42" y1="24" x2="46" y2="36"/><line x1="28" y1="38" x2="16" y2="66"/><line x1="28" y1="38" x2="40" y2="66"/></svg></div><div class="ex-info"><div class="ex-name">Bicepsový zdvih s velkou činkou</div><div class="ex-meta">Podhmat · Lokte fixované u těla</div></div><div class="ex-badge">3×10</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,2,3)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 55 80" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="28" cy="9" r="6"/><line x1="28" y1="15" x2="28" y2="36"/><line x1="14" y1="24" x2="42" y2="24"/><line x1="14" y1="24" x2="10" y2="38"/><line x1="10" y1="38" x2="10" y2="52"/><rect x="6" y="48" width="7" height="8" rx="1.5"/><line x1="42" y1="24" x2="46" y2="38"/><line x1="46" y1="38" x2="46" y2="52"/><rect x="42" y="48" width="7" height="8" rx="1.5"/><line x1="28" y1="36" x2="16" y2="64"/><line x1="28" y1="36" x2="40" y2="64"/></svg></div><div class="ex-info"><div class="ex-name">Kladivové zdvihy s jednoručkami</div><div class="ex-meta">Neutrální úchop · Střídavě</div></div><div class="ex-badge">3×12</div></div></div>
+      <div class="ex-card" onclick="toggleEx(this,2,4)"><div class="ex-inner"><div class="ex-check"><svg class="check-icon" width="13" height="10" viewBox="0 0 14 11"><path d="M1 5.5L5 9.5L13 1.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ex-picto"><svg viewBox="0 0 70 60" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="35" cy="10" r="6"/><line x1="35" y1="16" x2="35" y2="36"/><line x1="14" y1="26" x2="56" y2="26"/><line x1="14" y1="26" x2="5" y2="18"/><line x1="56" y1="26" x2="65" y2="18"/><line x1="0" y1="12" x2="70" y2="12" stroke-dasharray="4 3" stroke-width="1.5"/><line x1="35" y1="36" x2="22" y2="56"/><line x1="35" y1="36" x2="48" y2="56"/></svg></div><div class="ex-info"><div class="ex-name">Rozpažování na protisměrných kladkách</div><div class="ex-meta">Max. protažení a kontrakce svalu</div></div><div class="ex-badge">3×15</div></div></div>
+    </div>
+    <div class="active-line"></div>
+    <div class="tips-section">
+      <div class="tips-header">⚡ Strategie pro povislá prsa</div>
+      <div class="tip-accordion"><div class="tip-toggle" onclick="toggleTip(this)"><span class="tip-name">Lopatky v kapse</span><span class="tip-arrow">▾</span></div><div class="tip-body">Při všech tlacích na prsa musíš mít lopatky stažené k sobě a dolů. Hrudník se tím vypne dopředu a svaly prsou budou muset pracovat naplno.</div></div>
+      <div class="tip-accordion"><div class="tip-toggle" onclick="toggleTip(this)"><span class="tip-name">Hloubka pohybu</span><span class="tip-arrow">▾</span></div><div class="tip-body">U tlaků s jednoručkami jdi v dolní fázi co nejníže. Povislý vzhled je způsoben zkráceným svalem — plný rozsah pohybu to napravuje.</div></div>
+      <div class="tip-accordion"><div class="tip-toggle" onclick="toggleTip(this)"><span class="tip-name">Protahování o zárubeň</span><span class="tip-arrow">▾</span></div><div class="tip-body">Dej předloktí na rám dveří a jemně vykroč vpřed, dokud necítíš tah v prsou. Drž 30 sekund.</div></div>
+      <div class="tip-accordion"><div class="tip-toggle" onclick="toggleTip(this)"><span class="tip-name">Otevírání hrudníku</span><span class="tip-arrow">▾</span></div><div class="tip-body">Sepni ruce za zády, propni lokty a táhni ramena dozadu a dolů. Skvělé po každém tréninku.</div></div>
+    </div>
+  </div>
+
+  <!-- STATS + RING (after exercises) -->
+  <div class="bottom-stats">
+    <div class="active-line"></div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="statDone">0</div><div class="stat-label">Splněno</div></div>
+      <div class="stat-card"><div class="stat-num" id="statTotal">15</div><div class="stat-label">Celkem</div></div>
+      <div class="stat-card"><div class="stat-num" id="statPct">0%</div><div class="stat-label">Pokrok</div></div>
+    </div>
+    <div class="ring-container">
+      <div class="ring-wrap">
+        <svg class="ring-svg" width="155" height="155" viewBox="0 0 155 155">
+          <circle class="ring-bg" cx="77.5" cy="77.5" r="70"/>
+          <circle class="ring-progress" id="mainRing" cx="77.5" cy="77.5" r="70"/>
+        </svg>
+        <div class="ring-center"><div class="ring-pct" id="ringPct">0%</div><div class="ring-label">Týden</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="reset-btn" onclick="resetAll()">↺ Reset týdne</button>
+    <span class="week-label" id="weekLabel">Trénink 0 / 3 dnů dokončen</span>
+  </div>
+</div>
+
+<script>
+const cursor=document.getElementById('cursor'),trail=document.getElementById('cursor-trail');
+let mx=0,my=0,tx=0,ty=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px';});
+setInterval(()=>{tx+=(mx-tx)*0.15;ty+=(my-ty)*0.15;trail.style.left=tx+'px';trail.style.top=ty+'px';},16);
+document.querySelectorAll('button,.ex-card,.day-btn,.tip-toggle').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cursor.style.width='20px';cursor.style.height='20px';cursor.style.background='var(--c2)';});
+  el.addEventListener('mouseleave',()=>{cursor.style.width='12px';cursor.style.height='12px';cursor.style.background='var(--c1)';});
+});
+
+const canvas=document.getElementById('bgCanvas'),ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+const pts=Array.from({length:55},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.4+0.3,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25,a:Math.random()*0.35+0.1,c:[`rgba(0,245,255,`,`rgba(123,47,255,`,`rgba(255,0,110,`][Math.floor(Math.random()*3)]}));
+function anim(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.c+p.a+')';ctx.fill();});
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<90){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(0,245,255,${0.04*(1-d/90)})`;ctx.lineWidth=0.5;ctx.stroke();}}
+  requestAnimationFrame(anim);
+}
+anim();
+
+let state=JSON.parse(localStorage.getItem('honzistyo_v1')||'null')||{done:{}};
+function save(){localStorage.setItem('honzistyo_v1',JSON.stringify(state));}
+
+function toggleEx(el,day,idx){
+  const r=document.createElement('div');r.className='ripple';
+  r.style.cssText=`width:${el.offsetWidth*2}px;height:${el.offsetWidth*2}px;left:${el.offsetWidth/2-el.offsetWidth}px;top:${el.offsetHeight/2-el.offsetWidth}px`;
+  el.appendChild(r);setTimeout(()=>r.remove(),700);
+  el.classList.toggle('done');
+  state.done[`d${day}e${idx}`]=el.classList.contains('done');
+  save();updateAll();
+  if(navigator.vibrate)navigator.vibrate(el.classList.contains('done')?[20]:[10]);
+}
+function completeAll(day){
+  const list=document.querySelectorAll(`#exList${day} .ex-card`);
+  list.forEach((el,i)=>setTimeout(()=>{el.classList.add('done');state.done[`d${day}e${i}`]=true;},i*80));
+  setTimeout(()=>{save();updateAll();},list.length*80+100);
+}
+function switchDay(idx){
+  document.querySelectorAll('.day-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  document.querySelectorAll('.day-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+}
+function toggleTip(t){const a=t.closest('.tip-accordion'),was=a.classList.contains('open');document.querySelectorAll('.tip-accordion').forEach(x=>x.classList.remove('open'));if(!was)a.classList.add('open');}
+function spawnParticles(id){
+  const c=document.getElementById(id);c.innerHTML='';
+  ['#00f5ff','#ff006e','#7b2fff','#ffbe0b','#00c864'].forEach((col,i)=>{
+    for(let j=0;j<4;j++){const p=document.createElement('div');p.className='banner-particle';p.style.left=Math.random()*100+'%';p.style.bottom=0;p.style.background=col;p.style.animationDelay=Math.random()*0.6+'s';p.style.animationDuration=(1+Math.random())+'s';c.appendChild(p);}
+  });
+}
+function updateAll(){
+  let totalDone=0,total=15;
+  [0,1,2].forEach(day=>{
+    const cards=document.querySelectorAll(`#exList${day} .ex-card`);
+    let d=0;cards.forEach((_,i)=>{if(state.done[`d${day}e${i}`])d++;});totalDone+=d;
+    document.getElementById(`miniRing${day}`).style.strokeDashoffset=88*(1-(cards.length?d/cards.length:0));
+    const banner=document.getElementById(`banner${day}`);
+    if(d===cards.length&&cards.length>0){if(!banner.classList.contains('show')){banner.classList.add('show');spawnParticles(`bp${day}`);}}
+    else banner.classList.remove('show');
+  });
+  const pct=totalDone/total;
+  const circ=2*Math.PI*70;
+  document.getElementById('mainRing').style.strokeDashoffset=circ*(1-pct);
+  document.getElementById('mainRing').style.strokeDasharray=circ;
+  document.getElementById('ringPct').textContent=Math.round(pct*100)+'%';
+  document.getElementById('statDone').textContent=totalDone;
+  document.getElementById('statTotal').textContent=total;
+  document.getElementById('statPct').textContent=Math.round(pct*100)+'%';
+  const dc=[0,1,2].filter(d=>{const c=document.querySelectorAll(`#exList${d} .ex-card`);let dn=0;c.forEach((_,i)=>{if(state.done[`d${d}e${i}`])dn++;});return dn===c.length&&c.length>0;}).length;
+  document.getElementById('weekLabel').textContent=`Trénink ${dc} / 3 dnů dokončen`;
+}
+function restoreState(){
+  [0,1,2].forEach(day=>document.querySelectorAll(`#exList${day} .ex-card`).forEach((el,i)=>{if(state.done[`d${day}e${i}`])el.classList.add('done');}));
+  updateAll();
+}
+function resetAll(){
+  if(!confirm('Opravdu resetovat týden?'))return;
+  state={done:{}};save();
+  document.querySelectorAll('.ex-card').forEach(el=>el.classList.remove('done'));
+  document.querySelectorAll('.day-complete-banner').forEach(b=>b.classList.remove('show'));
+  updateAll();
+}
+restoreState();
+</script>
+</body>
+</html>
